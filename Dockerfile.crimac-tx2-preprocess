@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-FROM crimac-tx2-base as builder
+FROM crimac/jetson-tx2-base:latest as builder
 
 RUN mkdir /install
 WORKDIR /install
@@ -55,7 +55,7 @@ RUN apt-get update && \
     export PYARROW_WITH_PARQUET=1 && \
     pip install -r /requirements.txt
 
-FROM crimac-tx2-base
+FROM crimac/jetson-tx2-base:latest
 
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
