@@ -1,0 +1,80 @@
+# MIT License
+
+# Copyright (c) 2021 Ibrahim Umar
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+FROM crimac-tx2-base as builder
+
+RUN mkdir /install
+WORKDIR /install
+
+COPY requirements.txt /requirements.txt
+
+RUN apt-get update && \
+    apt-get install -y -V ca-certificates lsb-release wget  && \
+    wget https://apache.bintray.com/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
+    apt-get install -y -V ./apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
+    apt-get update && \
+    apt-get install -y -V libarrow-dev \
+        libarrow-glib-dev \
+        libarrow-dataset-dev \
+        libarrow-flight-dev \
+        libarrow-python-dev \
+        #libplasma-dev \
+        #libplasma-glib-dev \
+        #libgandiva-dev \
+        #libgandiva-glib-dev \
+        libparquet-dev \
+        libparquet-glib-dev \
+        libopenblas-dev \
+        libnetcdf-dev \
+        cmake \
+        git && \
+    export VIRTUAL_ENV=/opt/venv && \
+    python -m venv $VIRTUAL_ENV && \
+    export PATH="$VIRTUAL_ENV/bin:$PATH" && \
+    export ARROW_HOME=/usr && \
+    export PYARROW_WITH_PARQUET=1 && \
+    pip install -r /requirements.txt
+
+FROM crimac-tx2-base
+
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY CRIMAC_preprocess.py /app/CRIMAC_preprocess.py
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y -V ca-certificates lsb-release wget  && \
+    wget https://apache.bintray.com/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
+    apt-get install -y -V ./apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
+    apt-get update && \
+    apt-get install -y -V libarrow300 \ 
+            libnetcdf13 \
+            libopenblas-base \
+            libarrow-python300 \
+            libparquet300 && \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD ["python", "/app/CRIMAC_preprocess.py"]
+

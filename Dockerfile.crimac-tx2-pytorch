@@ -1,0 +1,75 @@
+# MIT License
+
+# Copyright (c) 2021 Ibrahim Umar
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+FROM crimac-tx2-base as base
+
+ARG PYTORCH_BUILD_VERSION=1.7.1
+ARG PYTORCH_BUILD_NUMBER=1
+
+
+RUN mv /etc/apt/sources.list.d/nvidia-l4t-apt-source.list /etc/apt/ && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates && \
+    mv /etc/apt/nvidia-l4t-apt-source.list /etc/apt/sources.list.d && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        nvidia-container-csv-cuda \
+        nvidia-container-csv-cudnn \
+        cmake \
+	python-pip \
+        git \
+        libopenblas-dev && \
+    #rm -fR /usr/local/cuda /usr/local/cuda-10.2 && ln -s /usr/local/cuda-10.0 /usr/local/cuda && \
+    export PATH=/usr/local/bin:/usr/local/cuda-10.0/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
+    # Clone pytorch
+    git clone --recursive --branch v${PYTORCH_BUILD_VERSION} http://github.com/pytorch/pytorch && \
+    cd pytorch && \
+    # Set environment variables
+    export USE_NCCL=0 && \
+    export USE_DISTRIBUTED=0 && \
+    export USE_QNNPACK=0 && \
+    export USE_PYTORCH_QNNPACK=0 && \
+    export TORCH_CUDA_ARCH_LIST="5.3;6.2;7.2" && \
+    # Build pytorch wheels
+    pip install -r requirements.txt && \
+    pip install scikit-build && \
+    pip install ninja && \
+    python setup.py bdist_wheel
+
+ENV VIRTUAL_ENV=/opt/venv
+RUN python -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN pip install /pytorch/dist/torch-${PYTORCH_BUILD_VERSION}-cp38-cp38-linux_aarch64.whl
+
+FROM crimac-tx2-base
+
+COPY --from=base /opt/venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN python -m venv $VIRTUAL_ENV && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        cuda-libraries-10-0 \
+        cuda-nvtx-10-0 \
+        libcudnn7 \
+        libopenblas-base \
+        libgomp1 &&\
+     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
+     rm -rf /var/lib/apt/lists/*
