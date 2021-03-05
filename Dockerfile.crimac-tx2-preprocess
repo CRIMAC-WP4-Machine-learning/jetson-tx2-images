@@ -26,10 +26,11 @@ FROM crimac/jetson-tx2-base:latest as builder
 RUN mkdir /install
 WORKDIR /install
 
-COPY requirements.txt /requirements.txt
+#COPY requirements.txt /requirements.txt
 
 RUN apt-get update && \
     apt-get install -y -V ca-certificates lsb-release wget  && \
+    wget https://github.com/CRIMAC-WP4-Machine-learning/CRIMAC-preprocessing/raw/master/requirements.txt -O /requirements.txt && \
     wget https://apache.bintray.com/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
     apt-get install -y -V ./apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
     apt-get update && \
@@ -59,12 +60,13 @@ FROM crimac/jetson-tx2-base:latest
 
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-COPY CRIMAC_preprocess.py /app/CRIMAC_preprocess.py
+#COPY CRIMAC_preprocess.py /app/CRIMAC_preprocess.py
 
 WORKDIR /app
 
 RUN apt-get update && \
     apt-get install -y -V ca-certificates lsb-release wget  && \
+    wget https://github.com/CRIMAC-WP4-Machine-learning/CRIMAC-preprocessing/raw/master/CRIMAC_preprocess.py -O /app/CRIMAC_preprocess.py && \
     wget https://apache.bintray.com/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
     apt-get install -y -V ./apache-arrow-archive-keyring-latest-$(lsb_release --codename --short).deb  && \
     apt-get update && \
