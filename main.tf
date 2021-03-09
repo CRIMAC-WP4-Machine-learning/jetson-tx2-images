@@ -42,7 +42,8 @@ resource "random_pet" "sg" {}
 resource "aws_spot_instance_request" "build_docker" {
   ami                                  = "ami-08b6fc871ad49ff41"
   instance_type                        = "t4g.large"
-  spot_price                           = "0.04"
+  spot_price                           = "0.07"
+  spot_type                            = "one-time"
   vpc_security_group_ids               = [aws_security_group.ssh-sg.id]
   key_name                             = "aws-two"
   instance_initiated_shutdown_behavior = "terminate"
