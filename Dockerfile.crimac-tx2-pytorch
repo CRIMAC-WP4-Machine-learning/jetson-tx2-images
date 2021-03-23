@@ -64,12 +64,15 @@ FROM crimac/jetson-tx2-base:latest
 COPY --from=base /opt/venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra
 RUN python -m venv $VIRTUAL_ENV && \
     apt-get update && apt-get install -y --no-install-recommends \
+        nvidia-l4t-cuda \
         cuda-libraries-10-0 \
         cuda-nvtx-10-0 \
         libcudnn7 \
         libopenblas-base \
         libgomp1 &&\
      apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
-     rm -rf /var/lib/apt/lists/*
+     rm -rf /var/lib/apt/lists/* && \
+     ln -s /usr/lib/aarch64-linux-gnu/libcuda.so /usr/lib/aarch64-linux-gnu/libcuda.so.1

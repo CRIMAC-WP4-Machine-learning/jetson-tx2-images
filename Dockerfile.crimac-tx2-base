@@ -36,6 +36,7 @@ RUN chmod 644 /etc/apt/trusted.gpg.d/jetson-ota-public.asc \
         ca-certificates \
     && echo "deb https://repo.download.nvidia.com/jetson/common r32 main" > /etc/apt/sources.list.d/nvidia-l4t-apt-source.list \
     && echo "deb https://repo.download.nvidia.com/jetson/${SOC} r32 main" >> /etc/apt/sources.list.d/nvidia-l4t-apt-source.list \
+    && mkdir -p /opt/nvidia/l4t-packages/ && touch /opt/nvidia/l4t-packages/.nv-l4t-disable-boot-fw-update-in-preinstall \
     && rm -rf /var/lib/apt/lists/*
 
 # ensure local python is preferred over distribution python
