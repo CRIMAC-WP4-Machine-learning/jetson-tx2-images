@@ -2,9 +2,10 @@ name: "Terraform"
 
 on:
   push:
+    paths:
+      - 'Dockerfile*'
     branches:
       - main
-  pull_request:
 
 jobs:
   terraform:
