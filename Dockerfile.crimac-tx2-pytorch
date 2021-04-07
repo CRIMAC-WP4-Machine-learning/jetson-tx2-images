@@ -33,12 +33,17 @@ RUN mv /etc/apt/sources.list.d/nvidia-l4t-apt-source.list /etc/apt/ && \
     apt-get update && apt-get install -y --no-install-recommends \
         nvidia-container-csv-cuda \
         nvidia-container-csv-cudnn \
+        nvidia-container-csv-tensorrt \
+        cuda-nvrtc-dev-10-2 \
+        cuda-curand-dev-10-2 \
+        cuda-cufft-dev-10-2 \
+        cuda-cusolver-dev-10-2 \
+        cuda-cusparse-dev-10-2 \
         cmake \
 	python-pip \
         git \
         libopenblas-dev && \
-    #rm -fR /usr/local/cuda /usr/local/cuda-10.2 && ln -s /usr/local/cuda-10.0 /usr/local/cuda && \
-    export PATH=/usr/local/bin:/usr/local/cuda-10.0/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
+    export PATH=/usr/local/cuda-10.2/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
     # Clone pytorch
     git clone --recursive --branch v${PYTORCH_BUILD_VERSION} http://github.com/pytorch/pytorch && \
     cd pytorch && \
@@ -48,6 +53,7 @@ RUN mv /etc/apt/sources.list.d/nvidia-l4t-apt-source.list /etc/apt/ && \
     export USE_QNNPACK=0 && \
     export USE_PYTORCH_QNNPACK=0 && \
     export TORCH_CUDA_ARCH_LIST="5.3;6.2;7.2" && \
+    export USE_TENSORRT=1 && \
     # Build pytorch wheels
     pip install -r requirements.txt && \
     pip install scikit-build && \
@@ -68,9 +74,11 @@ ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra
 RUN python -m venv $VIRTUAL_ENV && \
     apt-get update && apt-get install -y --no-install-recommends \
         nvidia-l4t-cuda \
-        cuda-libraries-10-0 \
-        cuda-nvtx-10-0 \
-        libcudnn7 \
+        cuda-libraries-10-2 \
+        cuda-nvtx-10-2 \
+        libcudnn8 \
+        libnvinfer7 \
+        libnvonnxparsers7 \
         libopenblas-base \
         libgomp1 &&\
      apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
