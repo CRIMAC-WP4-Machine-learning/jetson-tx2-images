@@ -39,10 +39,6 @@ RUN apt-get update && \
         libarrow-dataset-dev \
         libarrow-flight-dev \
         libarrow-python-dev \
-        #libplasma-dev \
-        #libplasma-glib-dev \
-        #libgandiva-dev \
-        #libgandiva-glib-dev \
         libparquet-dev \
         libparquet-glib-dev \
         libopenblas-dev \

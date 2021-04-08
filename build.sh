@@ -16,4 +16,4 @@ docker push docker.io/crimac/jetson-tx2-pytorch > ${OUT_DIR}/push_pytorch.log 2>
 
 
 # Collate logs
-tar czvf logs.tgz ${OUT_DIR}
+tar czvf ${ARTIFACT} ${OUT_DIR}

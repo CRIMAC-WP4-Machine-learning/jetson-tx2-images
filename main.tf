@@ -52,16 +52,17 @@ resource "aws_spot_instance_request" "build_docker" {
 
   user_data = <<-EOF
               #!/bin/bash
+              export ARTIFACT=/tmp/logs.tgz
               export OUT_DIR=/tmp/outputlogs
               echo "${var.DH_USERNAME}" > /opt/user.docker
               echo "${var.DH_TOKEN}" > /opt/token.docker
               sudo apt-get update && sudo apt-get upgrade -y
-              sudo apt-get install -y git docker.io
+              sudo apt-get install -y awscli git docker.io
               cat /opt/token.docker | sudo docker login --username `cat /opt/user.docker` --password-stdin
               git clone https://github.com/CRIMAC-WP4-Machine-learning/jetson-tx2-images.git
               cd jetson-tx2-images
               ./build.sh
-              aws s3 cp ./logs.tgz s3://${aws_s3_bucket.b.id}/tmp/logs.tgz
+              aws s3 cp ${ARTIFACT} s3://${aws_s3_bucket.b.id}/tmp/logs.tgz
               sudo poweroff
               EOF
 
@@ -91,25 +92,49 @@ resource "aws_security_group" "ssh-sg" {
 }
 
 resource "aws_iam_instance_profile" "s3_instance_profile" {
-  name  = "${random_pet.sg.id}-ip"
-  role  = aws_iam_role.s3_iam_role.name
+  name = "${random_pet.sg.id}-ip"
+  role = aws_iam_role.iam_role.name
 }
 
 
-resource "aws_iam_role" "s3_iam_role" {
+resource "aws_iam_role" "iam_role" {
   name = "${random_pet.sg.id}-r"
 
   assume_role_policy = <<EOF
-  {
-     "Version": "2021-04-08",
-     "Statement":[{
-       "Effect": "Allow",
-       "Action": "s3:*",
-       "Resource": ["${aws_s3_bucket.b.arn}",
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+
+resource "aws_iam_role_policy" "s3_policy" {
+  name = "${random_pet.sg.id}-p"
+  role = aws_iam_role.iam_role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": ["${aws_s3_bucket.b.arn}",
                     "${aws_s3_bucket.b.arn}/*"]
-     }]
-   }
-   EOF
+    }
+  ]
+}
+EOF
 }
 
 resource "aws_s3_bucket" "b" {
