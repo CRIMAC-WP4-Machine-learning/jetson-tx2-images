@@ -47,6 +47,9 @@ RUN mv /etc/apt/sources.list.d/nvidia-l4t-apt-source.list /etc/apt/ && \
     # Clone pytorch
     git clone --recursive --branch v${PYTORCH_BUILD_VERSION} http://github.com/pytorch/pytorch && \
     cd pytorch && \
+    # Patch for segmentation fault (https://github.com/pytorch/pytorch/commit/3bb1f59a9c3801409a20d34a613214b4209e2a22)
+    git format-patch -1 3bb1f59a9c3801409a20d34a613214b4209e2a22 -p --stdout > tmp.patch
+    patch -p1 < tmp.patch
     # Set environment variables
     export USE_NCCL=0 && \
     export USE_DISTRIBUTED=0 && \

@@ -1,0 +1,91 @@
+From 3bb1f59a9c3801409a20d34a613214b4209e2a22 Mon Sep 17 00:00:00 2001
+From: Thomas Viehmann <tv.code@beamnet.de>
+Date: Wed, 7 Apr 2021 09:30:06 -0700
+Subject: [PATCH] avoid CPU std::copysign segfault when compiling on arm64 with
+ gcc 7.5 / 8 for CUDA (#51834)
+
+Summary:
+It seems that the std::copysign code introduced in https://github.com/pytorch/pytorch/issues/51706 is too much for gcc 7.5 / 8 when compiled on arm64 (e.g. on Jetson with latest Jetpack) and causes it to produce an internal compiler error with segfault during compilation. This avoids the compiler bug it by not using std::copysign.
+
+A very kind person sent a Jetson Xavier NX {emoji:1f381} thank you {emoji:2764}.
+
+After https://github.com/pytorch/pytorch/issues/51900 fixed this for CPU-only arm64 (eg Raspberry), this fixes it for CUDA-using arm64 (e.g. Jetson). CUDA device lambdas must also be present as host functions for technical reasons but they are never used, so we just assert in the CPU variant instead of actually doing the operation.
+
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/51834
+
+Reviewed By: mrshenli
+
+Differential Revision: D27622277
+
+Pulled By: malfet
+
+fbshipit-source-id: a1dc4c3a67f925019782e24b796919e17339749f
+
+diff --git a/aten/src/ATen/native/cuda/BinaryMulDivKernel.cu b/aten/src/ATen/native/cuda/BinaryMulDivKernel.cu
+index 24b858948f..1c85d9b1a6 100644
+--- a/aten/src/ATen/native/cuda/BinaryMulDivKernel.cu
++++ b/aten/src/ATen/native/cuda/BinaryMulDivKernel.cu
+@@ -1,10 +1,11 @@
+ #include <ATen/AccumulateType.h>
+ #include <ATen/Dispatch.h>
++#include <ATen/native/BinaryOps.h>
+ #include <ATen/native/DispatchStub.h>
+-#include <ATen/native/cuda/Loops.cuh>
+ #include <ATen/native/TensorIterator.h>
+-#include <ATen/native/BinaryOps.h>
+ #include <c10/cuda/CUDAGuard.h>
++#include <c10/cuda/CUDAMathCompat.h>
++#include <ATen/native/cuda/Loops.cuh>
+ 
+ #include <type_traits>
+ 
+@@ -141,7 +142,7 @@ void div_floor_kernel_cuda(TensorIteratorBase& iter) {
+             floordiv += scalar_t(1.0);
+           }
+         } else {
+-          floordiv = std::copysign(scalar_t(0), a * inv_b);
++          floordiv = c10::cuda::compat::copysign(scalar_t(0), a * inv_b);
+         }
+         return floordiv;
+       });
+@@ -162,7 +163,7 @@ void div_floor_kernel_cuda(TensorIteratorBase& iter) {
+             floordiv += scalar_t(1.0);
+           }
+         } else {
+-          floordiv = std::copysign(scalar_t(0), a / b);
++          floordiv = c10::cuda::compat::copysign(scalar_t(0), a / b);
+         }
+         return floordiv;
+       });
+diff --git a/c10/cuda/CUDAMathCompat.h b/c10/cuda/CUDAMathCompat.h
+index 1fb0c3ec29..7ffa691410 100644
+--- a/c10/cuda/CUDAMathCompat.h
++++ b/c10/cuda/CUDAMathCompat.h
+@@ -43,10 +43,24 @@ __MATH_FUNCTIONS_DECL__ double ceil(double x) {
+ }
+ 
+ __MATH_FUNCTIONS_DECL__ float copysign(float x, float y) {
++#if defined(__CUDA_ARCH__) || defined(__HIPCC__)
+   return ::copysignf(x, y);
++#else
++  // std::copysign gets ICE/Segfaults with gcc 7.5/8 on arm64
++  // (e.g. Jetson), see PyTorch PR #51834
++  // This host function needs to be here for the compiler but is never used
++  TORCH_INTERNAL_ASSERT(
++      false, "CUDAMathCompat copysign should not run on the CPU");
++#endif
+ }
+ __MATH_FUNCTIONS_DECL__ double copysign(double x, double y) {
++#if defined(__CUDA_ARCH__) || defined(__HIPCC__)
+   return ::copysign(x, y);
++#else
++  // see above
++  TORCH_INTERNAL_ASSERT(
++      false, "CUDAMathCompat copysign should not run on the CPU");
++#endif
+ }
+ 
+ __MATH_FUNCTIONS_DECL__ float floor(float x) {
+-- 
+2.27.0
+
