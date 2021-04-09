@@ -52,6 +52,7 @@ resource "aws_spot_instance_request" "build_docker" {
 
   user_data = <<-EOF
               #!/bin/bash
+              export BUCKET_NAME=${aws_s3_bucket.b.id}
               export ARTIFACT=/tmp/logs.tgz
               export OUT_DIR=/tmp/outputlogs
               echo "${var.DH_USERNAME}" > /opt/user.docker
@@ -62,7 +63,6 @@ resource "aws_spot_instance_request" "build_docker" {
               git clone https://github.com/CRIMAC-WP4-Machine-learning/jetson-tx2-images.git
               cd jetson-tx2-images
               ./build.sh
-              aws s3 cp ${ARTIFACT} s3://${aws_s3_bucket.b.id}/tmp/logs.tgz
               sudo poweroff
               EOF
 

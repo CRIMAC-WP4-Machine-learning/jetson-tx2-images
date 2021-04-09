@@ -43,8 +43,10 @@ RUN apt-get update && \
         libparquet-glib-dev \
         libopenblas-dev \
         libnetcdf-dev \
+        llvm-10-dev \
         cmake \
         git && \
+    ln -s /usr/bin/llvm-config-10 /usr/bin/llvm-config && \
     export VIRTUAL_ENV=/opt/venv && \
     python -m venv $VIRTUAL_ENV && \
     export PATH="$VIRTUAL_ENV/bin:$PATH" && \
@@ -70,7 +72,8 @@ RUN apt-get update && \
             libnetcdf13 \
             libopenblas-base \
             libarrow-python300 \
-            libparquet300 && \
+            libparquet300 \
+            llvm-10 && \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
     rm -rf /var/lib/apt/lists/*
 

@@ -17,3 +17,6 @@ docker push docker.io/crimac/jetson-tx2-pytorch > ${OUT_DIR}/push_pytorch.log 2>
 
 # Collate logs
 tar czvf ${ARTIFACT} ${OUT_DIR}
+
+# Upload to S3
+aws s3 cp ${ARTIFACT} s3://${BUCKET_NAME}/tmp/logs.tgz
