@@ -53,7 +53,7 @@ resource "aws_spot_instance_request" "build_docker" {
   user_data = <<-EOF
               #!/bin/bash
               export BUCKET_NAME=${aws_s3_bucket.b.id}
-              export ARTIFACT=/tmp/logs.tgz
+              export ARTIFACTS=/tmp/build_logs.tgz
               export OUT_DIR=/tmp/outputlogs
               echo "${var.DH_USERNAME}" > /opt/user.docker
               echo "${var.DH_TOKEN}" > /opt/token.docker
