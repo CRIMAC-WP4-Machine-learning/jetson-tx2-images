@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-FROM crimac/jetson-tx2-base:latest as base
+FROM crimac/jetson-tx2-base:latest as builder
 
 ARG PYTORCH_BUILD_VERSION=1.8.1
 ARG PYTORCH_BUILD_NUMBER=1
@@ -61,16 +61,15 @@ RUN mv /etc/apt/sources.list.d/nvidia-l4t-apt-source.list /etc/apt/ && \
     pip install -r requirements.txt && \
     pip install scikit-build && \
     pip install ninja && \
-    python setup.py bdist_wheel
+    python setup.py bdist_wheel && \
+    mkdir /tmp/pytorch_wheel && \
+    cp /pytorch/dist/torch-${PYTORCH_BUILD_VERSION}-cp38-cp38-linux_aarch64.whl /tmp/pytorch_wheel/
 
-ENV VIRTUAL_ENV=/opt/venv
-RUN python -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install /pytorch/dist/torch-${PYTORCH_BUILD_VERSION}-cp38-cp38-linux_aarch64.whl
+FROM scratch AS export
+COPY --from=builder /tmp/pytorch_wheel .
 
-FROM crimac/jetson-tx2-base:latest
-
-COPY --from=base /opt/venv /opt/venv
+FROM crimac/jetson-tx2-base:latest as final
+COPY --from=builder /tmp/pytorch_wheel /tmp
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra
@@ -81,9 +80,12 @@ RUN python -m venv $VIRTUAL_ENV && \
         cuda-nvtx-10-2 \
         libcudnn8 \
         libnvinfer7 \
+        libnvinfer-plugin7 \
         libnvonnxparsers7 \
         libopenblas-base \
-        libgomp1 &&\
+        libgomp1 && \
+     pip install $(ls /tmp/*.whl) && \
      apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
      rm -rf /var/lib/apt/lists/* && \
-     ln -s /usr/lib/aarch64-linux-gnu/libcuda.so /usr/lib/aarch64-linux-gnu/libcuda.so.1
+     ln -s /usr/lib/aarch64-linux-gnu/libcuda.so /usr/lib/aarch64-linux-gnu/libcuda.so.1 && \
+     rm -rf /tmp/pytorch_wheel
