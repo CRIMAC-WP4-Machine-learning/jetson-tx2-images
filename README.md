@@ -28,7 +28,7 @@ There are 3 different image types:
 
     Here are some of the usage examples:
 
-    ## a. CUDA Device Query
+    ## A. CUDA Device Query
   
     ```console
     crimac@crimac-tx2:~$ sudo docker run --rm -it \
@@ -40,7 +40,6 @@ There are 3 different image types:
                                 --device=/dev/nvhost-as-gpu \
                                 --device=/dev/nvhost-vic \
                                 --device=/dev/tegra_dc_ctrl \
-                                --network=host \
                                 -v /usr/local/cuda-10.2/samples:/samples \
                                 crimac/jetson-tx2-pytorch \
                                 /bin/bash
@@ -53,7 +52,7 @@ There are 3 different image types:
     Detected 1 CUDA Capable device(s)
 
     Device 0: "NVIDIA Tegra X2"
-      CUDA Driver Version:                           10.0
+      CUDA Driver Version:                           10.2
       CUDA Capability Major/Minor version number:    6.2
       Total amount of global memory:                 7850 MBytes (8231813120 bytes)
       ( 2) Multiprocessors, (128) CUDA Cores/MP:     256 CUDA Cores
@@ -89,12 +88,11 @@ There are 3 different image types:
       Compute Mode:
         < Default (multiple host threads can use ::cudaSetDevice() with device simultaneously) >
     Result = PASS
-
     ```
     ## B. Pytorch with CUDA
 
     ```python
-    Python 3.8.8 (default, Mar 23 2021, 14:15:45) 
+    Python 3.8.9 (default, Apr 12 2021, 15:27:15)
     [GCC 7.5.0] on linux
     Type "help", "copyright", "credits" or "license" for more information.
 
@@ -105,9 +103,10 @@ There are 3 different image types:
     Using device: cuda
 
     >>> torch.rand(10).to(device)
-    tensor([0.5963, 0.6340, 0.4312, 0.3977, 0.8824, 0.2943, 0.8327, 0.8140, 0.7497, 0.1612], device='cuda:0')
+    tensor([0.1142, 0.4635, 0.6739, 0.3689, 0.2312, 0.0696, 0.9773, 0.7621, 0.9729, 0.6640], device='cuda:0')
+
     >>> torch.rand(10, device=device)
-    tensor([0.6876, 0.4573, 0.1523, 0.9129, 0.7714, 0.0133, 0.4350, 0.1552, 0.1037, 0.5649], device='cuda:0')
+    tensor([0.1406, 0.6409, 0.5563, 0.5888, 0.9272, 0.1949, 0.9050, 0.5155, 0.7439, 0.1924], device='cuda:0')
 
     >>> print(torch.cuda.get_device_name(0))
     NVIDIA Tegra X2
@@ -117,6 +116,5 @@ There are 3 different image types:
 
     >>> print('Cached memory:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
     Cached memory:    0.0 GB
-
     ```
 
